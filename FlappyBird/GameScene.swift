@@ -15,7 +15,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
     var wallNode:SKNode!
     var bird:SKSpriteNode!
     //アイテムの変数を宣言
-    var itemNode:SKSpriteNode?
+    var itemNode:SKNode?
     
     // 衝突判定カテゴリー ↓追加
     let birdCategory: UInt32 = 1 << 0       // 0...00001
@@ -102,7 +102,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
         let movingDistance = CGFloat(self.frame.size.width + wallTexture.size().width)
         
         // 画面外まで移動するアクションを作成
-        let moveWall = SKAction.moveBy(x: -movingDistance, y: 0, duration:4.0)
+        let moveWall = SKAction.moveBy(x: -movingDistance, y: 0, duration:5.0)
         
         // 自身を取り除くアクションを作成
         let removeWall = SKAction.removeFromParent()
@@ -150,7 +150,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
             
             // スプライトに物理演算を設定する
             upper.physicsBody = SKPhysicsBody(rectangleOf: wallTexture.size())
-            under.physicsBody?.categoryBitMask = self.wallCategory
+            upper.physicsBody?.categoryBitMask = self.wallCategory
             
             // 衝突の時に動かないように設定する
             upper.physicsBody?.isDynamic = false
@@ -172,7 +172,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
         })
         
         // 次の壁作成までの待ち時間のアクションを作成
-        let waitAnimation = SKAction.wait(forDuration: 2)
+        let waitAnimation = SKAction.wait(forDuration: 3)
         
         // 壁を作成->待ち時間->壁を作成を無限に繰り替えるアクションを作成
         let repeatForeverAnimation = SKAction.repeatForever(SKAction.sequence([createWallAnimation, waitAnimation]))
@@ -190,7 +190,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
         let movingDistance = CGFloat(self.frame.size.width + itemTexture.size().width)
         
         // 左に移動させるSKAction
-        let moveItem = SKAction.moveBy(x: -movingDistance, y: 0, duration:10.0)
+        let moveItem = SKAction.moveBy(x: -movingDistance, y: 0, duration:5.0)
         
         // 自身を取り除くアクションを作成
         let removeItem = SKAction.removeFromParent()
@@ -204,42 +204,42 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
             let baselineTexture = SKTexture(imageNamed: "wall")
             
             // テクスチャを指定してスプライトを作成する
-            let itemNode = SKSpriteNode(texture: itemTexture)
+            self.itemNode = SKSpriteNode(texture: itemTexture)
             
             //ランダムに生成される値によってアイテムの表示位置を変える
             let h = UInt32(self.frame.size.height)
             let random:UInt32 = arc4random_uniform( h/2 )
 
             if( random >= h/4 ){
-                itemNode.position = CGPoint(
+                self.itemNode!.position = CGPoint(
                     x: self.frame.size.width + baselineTexture.size().width / 2,
                     y: self.frame.size.height/2 + CGFloat(random)
                 )
             }
             else{
-                itemNode.position = CGPoint(
+                self.itemNode!.position = CGPoint(
                     x: self.frame.size.width + baselineTexture.size().width / 2,
                     y: self.frame.size.height/2 - CGFloat(random)
                 )
             }
         
             //衝突判定用の性質を追加する
-            itemNode.physicsBody?.categoryBitMask = self.itemCategory
-            itemNode.physicsBody?.contactTestBitMask = self.birdCategory
-            itemNode.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width:itemNode.frame.size.width , height:itemNode.frame.size.height ))
+            self.itemNode!.physicsBody?.categoryBitMask = self.itemCategory
+            self.itemNode!.physicsBody?.contactTestBitMask = self.birdCategory
+            self.itemNode!.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width:self.itemNode!.frame.size.width , height:self.itemNode!.frame.size.height ))
         
             //アイテムが動かないようにする
-            itemNode.physicsBody?.isDynamic = false
+            self.itemNode!.physicsBody?.isDynamic = false
         
             //スプライトにアクションを追加
-            itemNode.run(repeatScrollItem)
+            self.itemNode!.run(repeatScrollItem)
 
             //スプライトを追加する
-            self.scrollNode.addChild(itemNode)
+            self.scrollNode.addChild(self.itemNode!)
         })
         
         // 次のアイテム生成までの待ち時間のアクションを作成
-        let itemAnimation = SKAction.wait(forDuration: 5)
+        let itemAnimation = SKAction.wait(forDuration: 4)
         
         // アイテムを作成->待ち時間->アイテムを作成を無限に繰り替えるアクションを作成
         let repeatForeverAnimation = SKAction.repeatForever(SKAction.sequence([createItemAnimation, itemAnimation]))
@@ -359,7 +359,7 @@ func setupCloud() {
             let sound = SKAction.playSoundFileNamed("effectSound.mp3", waitForCompletion: false)
             run(sound)
             //アイテムを消す
-            itemNode?.removeFromParent()
+            self.itemNode!.removeFromParent()
             
         }else if (contact.bodyA.categoryBitMask & scoreCategory) == scoreCategory || (contact.bodyB.categoryBitMask & scoreCategory) == scoreCategory {
             // スコア用の物体と衝突した
