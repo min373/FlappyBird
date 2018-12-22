@@ -83,73 +83,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
         // 衝突のカテゴリー設定
         bird.physicsBody?.categoryBitMask = birdCategory
         bird.physicsBody?.collisionBitMask = groundCategory | wallCategory
-        bird.physicsBody?.contactTestBitMask = groundCategory | wallCategory
+        bird.physicsBody?.contactTestBitMask = groundCategory | wallCategory | itemCategory
 
         // アニメーションを設定
         bird.run(flap)
         
         // スプライトを追加する
         addChild(bird)
-    }
-    
-    //アイテムの画像をセットアップ
-    func setupItem() {
-        //アイテムの画像を読み込む
-        let itemTexture = SKTexture(imageNamed: "item")
-        itemTexture.filteringMode = .nearest
-        
-        // 移動する距離を計算
-        let movingDistance = CGFloat(self.frame.size.width + itemTexture.size().width)
-        
-        // 画面外まで移動するアクションを作成
-        let moveItem = SKAction.moveBy(x: -movingDistance, y: 0, duration:4.0)
-        
-        // 自身を取り除くアクションを作成
-        let removeItem = SKAction.removeFromParent()
-        
-        // 2つのアニメーションを順に実行するアクションを作成
-        let itemAnimation = SKAction.sequence([moveItem, removeItem])
-        
-        // アイテムを生成するアクションを作成
-        let createItemAnimation = SKAction.run({
-            // アイテムを乗せるノードを作成
-            let item = SKNode()
-            item.position = CGPoint(x: self.frame.size.width + itemTexture.size().width / 2, y: 0.0)
-            item.zPosition = -50.0 // 雲より手前、地面より奥
-            
-            // 画面のY軸の中央値
-            let center_y = UInt32( self.frame.size.height / 2 )
-            // Y座標を上下ランダムにさせるときの最大値
-            let random_y_range = self.frame.size.height / 4
-            // 1〜random_y_rangeまでのランダムな整数を生成
-            let random_y = arc4random_uniform( UInt32(random_y_range) )
-            // Y軸の値にランダムな値を足して、アイテムのY座標を決定(中央から上方向にランダムな距離)
-            let item_y = CGFloat(center_y + random_y)
-            
-            // アイテムを作成
-            let itemImage = SKSpriteNode(texture: itemTexture)
-            itemImage.position = CGPoint(x: 1.0, y: item_y)
-            
-            // スプライトに物理演算を設定する
-            itemImage.physicsBody = SKPhysicsBody(rectangleOf: itemTexture.size())
-            itemImage.physicsBody?.categoryBitMask = self.itemCategory
-            
-            // 衝突の時に動かないように設定する
-            itemImage.physicsBody?.isDynamic = false
-            
-            item.addChild(itemImage)
-            item.run(itemAnimation)
-
-        })
-        
-        // 次の壁作成までの待ち時間のアクションを作成
-        let waitAnimation = SKAction.wait(forDuration: 2)
-        
-        // 壁を作成->待ち時間->壁を作成を無限に繰り替えるアクションを作成
-        let repeatForeverAnimation = SKAction.repeatForever(SKAction.sequence([createItemAnimation, waitAnimation]))
-        
-        wallNode.run(repeatForeverAnimation)
-        
     }
     
     func setupWall() {
@@ -238,7 +178,64 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
         
         wallNode.run(repeatForeverAnimation)
     }
-    
+
+    //アイテムの画像をセットアップ
+    func setupItem() {
+        //アイテムの画像を読み込む
+        let itemTexture = SKTexture(imageNamed: "item")
+        itemTexture.filteringMode = .nearest
+        
+        // テクスチャを指定してスプライトを作成する
+        let itemSprite = SKSpriteNode(texture: itemTexture)
+        
+        // アイテムの表示する位置を指定する(壁の載せられたノードを参考にアイテムを表示させたいめ)
+        let baselineTexture = SKTexture(imageNamed: "wall")
+        
+        //ランダムに生成される値によってアイテムの表示位置を変える
+        let h = UInt32(self.frame.size.height)
+        let random:UInt32 = arc4random_uniform( h/2 )
+
+        if( random >= h/4 ){
+            itemSprite.position = CGPoint(
+                x: self.frame.size.width + baselineTexture.size().width / 2,
+                y: self.frame.size.height/2 + CGFloat(random)
+            )
+        }
+        else{
+            itemSprite.position = CGPoint(
+            x: self.frame.size.width + baselineTexture.size().width / 2,
+            y: self.frame.size.height/2 - CGFloat(random)
+            )
+        }
+        
+        // 移動する距離を計算
+        let movingDistance = CGFloat(self.frame.size.width + itemTexture.size().width)
+        
+        // 左に移動させるSKAction
+        let moveItem = SKAction.moveBy(x: -movingDistance, y: 0, duration:10.0)
+        
+        // 元の位置に帰還させるSKAction
+        let resetItem = SKAction.moveBy(x: itemTexture.size().width, y: 0, duration: 0.0)
+        
+        // 右から左へのスクロール
+        let repeatScrollItem = SKAction.repeatForever(SKAction.sequence([moveItem, resetItem]))
+        
+        //衝突判定用の性質を追加する
+        itemSprite.physicsBody?.categoryBitMask = self.itemCategory
+        itemSprite.physicsBody?.contactTestBitMask = self.birdCategory
+        itemSprite.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width:itemSprite.frame.size.width , height:itemSprite.frame.size.height ))
+        
+        //アイテムが動かないようにする
+        itemSprite.physicsBody?.isDynamic = false
+        
+        //スプライトにアクションを追加
+        itemSprite.run(repeatScrollItem)
+
+        //スプライトを追加する
+        scrollNode.addChild(itemSprite)
+        
+    }
+
 func setupGround() {
     // 地面の画像を読み込む
     let groundTexture = SKTexture(imageNamed: "ground")
@@ -341,7 +338,15 @@ func setupCloud() {
             return
         }
         
-        if (contact.bodyA.categoryBitMask & scoreCategory) == scoreCategory || (contact.bodyB.categoryBitMask & scoreCategory) == scoreCategory {
+        if (contact.bodyA.categoryBitMask & itemCategory) == itemCategory || (contact.bodyB.categoryBitMask &
+            itemCategory) == itemCategory{
+            // アイテムと衝突した
+            print("itemScore Up")
+            itemscore += 1
+            itemLabelNode.text = "Itemscore:\(itemscore)"
+            
+            
+        }else if (contact.bodyA.categoryBitMask & scoreCategory) == scoreCategory || (contact.bodyB.categoryBitMask & scoreCategory) == scoreCategory {
             // スコア用の物体と衝突した
             print("ScoreUp")
             score += 1
