@@ -129,7 +129,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
             let under_wall_y = CGFloat(under_wall_lowest_y + random_y)
             
             // キャラが通り抜ける隙間の長さ
-            let slit_length = self.frame.size.height / 6
+            let slit_length = self.frame.size.height / 5
             
             // 下側の壁を作成
             let under = SKSpriteNode(texture: wallTexture)
@@ -177,6 +177,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
         // 壁を作成->待ち時間->壁を作成を無限に繰り替えるアクションを作成
         let repeatForeverAnimation = SKAction.repeatForever(SKAction.sequence([createWallAnimation, waitAnimation]))
         
+ 
         wallNode.run(repeatForeverAnimation)
     }
 
@@ -226,7 +227,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
             //衝突判定用の性質を追加する
             self.itemNode!.physicsBody?.categoryBitMask = self.itemCategory
             self.itemNode!.physicsBody?.contactTestBitMask = self.birdCategory
-            self.itemNode!.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width:self.itemNode!.frame.size.width , height:self.itemNode!.frame.size.height ))
+            self.itemNode!.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width:0.3 * self.itemNode!.frame.size.width , height:0.3 * self.itemNode!.frame.size.height ))
         
             //アイテムが動かないようにする
             self.itemNode!.physicsBody?.isDynamic = false
